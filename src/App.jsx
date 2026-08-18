@@ -1,9 +1,9 @@
 import { HashRouter, Routes, Route } from "react-router-dom";
 import { useEffect, useState } from "react";
 
-import Sidebar from "./components/SideBar";
+import Sidebar from "./components/Sidebar";
 
-import Dashboard from "./pages/dashboard";
+import Dashboard from "./pages/Dashboard";
 import Produits from "./pages/Produits";
 import Stock from "./pages/Stock";
 import PatientForm from "./components/PatientForm";
