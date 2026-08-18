@@ -1,0 +1,322 @@
+*{
+    box-sizing:border-box;
+    font-family:Arial, sans-serif;
+    }
+    
+    
+    body{
+    
+    margin:0;
+    background:#f4f7fb;
+    
+    }
+    
+    
+    
+    .app{
+    
+    display:flex;
+    min-height:100vh;
+    
+    }
+    
+    
+    
+    /* SIDEBAR */
+    
+    
+    .sidebar{
+    
+    width:230px;
+    
+    background:#0f4c81;
+    
+    color:white;
+    
+    padding:20px;
+    
+    }
+    
+    
+    
+    .sidebar h2{
+    
+    text-align:center;
+    
+    margin-bottom:30px;
+    
+    }
+    
+    
+    
+    .sidebar a{
+    
+    display:block;
+    
+    color:white;
+    
+    text-decoration:none;
+    
+    padding:12px;
+    
+    margin:8px 0;
+    
+    border-radius:8px;
+    
+    }
+    
+    
+    
+    .sidebar a:hover{
+    
+    background:#1769aa;
+    
+    }
+    
+    
+    
+    /* MAIN */
+    
+    
+    .main{
+    
+    flex:1;
+    
+    padding:25px;
+    
+    }
+    
+    
+    
+    .content{
+    
+    background:white;
+    
+    padding:25px;
+    
+    border-radius:12px;
+    
+    box-shadow:0 3px 10px #ddd;
+    
+    }
+    
+    
+    
+    
+    /* FORM */
+    
+    .card{
+    
+    background:white;
+    
+    padding:20px;
+    
+    border-radius:12px;
+    
+    margin-bottom:20px;
+    
+    }
+    
+    
+    
+    input,
+    select{
+    
+    width:100%;
+    
+    padding:10px;
+    
+    margin:8px 0;
+    
+    border:1px solid #ccc;
+    
+    border-radius:6px;
+    
+    }
+    
+    
+    
+    button{
+    
+    background:#0f4c81;
+    
+    color:white;
+    
+    border:none;
+    
+    padding:10px 20px;
+    
+    border-radius:6px;
+    
+    cursor:pointer;
+    
+    }
+    
+    
+    
+    button:hover{
+    
+    background:#1769aa;
+    
+    }
+    
+    
+    
+    /* TABLE */
+    
+    
+    table{
+    
+    width:100%;
+    
+    border-collapse:collapse;
+    
+    margin-top:20px;
+    
+    background:white;
+    
+    }
+    
+    
+    
+    th{
+    
+    background:#0f4c81;
+    
+    color:white;
+    
+    }
+    
+    
+    
+    th,td{
+    
+    border:1px solid #ddd;
+    
+    padding:10px;
+    
+    text-align:center;
+    
+    }
+    
+    
+    
+    tr:nth-child(even){
+    
+    background:#f8f8f8;
+    
+    }
+    
+    
+    
+    /* DASHBOARD */
+    
+    
+    .dashboard{
+    
+    display:flex;
+    
+    gap:20px;
+    
+    }
+    
+    
+    
+    .box{
+    
+    background:white;
+    
+    padding:20px;
+    
+    border-radius:12px;
+    
+    flex:1;
+    
+    text-align:center;
+    
+    box-shadow:0 3px 10px #ddd;
+    
+    }
+    
+    
+    
+    .box p{
+    
+    font-size:30px;
+    
+    font-weight:bold;
+    
+    }
+
+        .suggestion{
+
+            padding:8px;
+            border:1px solid #ddd;
+            background:white;
+            cursor:pointer;
+            width:250px;
+            
+            }
+            
+            .suggestion:hover{
+            
+            background:#eee;
+            
+            }
+
+    @media print {
+
+/* PAGE */
+body{
+margin:0;
+padding:0;
+font-size:12px;
+}
+
+
+/* EN-TETE */
+.print-header{
+text-align:center;
+margin-bottom:15px;
+}
+
+.print-header h2{
+margin:5px 0;
+}
+
+
+/* INFO (region...) */
+.print-info{
+display:flex;
+justify-content:space-between;
+margin-bottom:10px;
+font-size:12px;
+}
+
+
+/* TABLE */
+table{
+width:100%;
+border-collapse:collapse;
+}
+
+th, td{
+border:1px solid black;
+padding:5px;
+text-align:center; /* 👉 centre chiffres */
+font-size:11px;
+}
+
+th{
+background:#ddd;
+}
+
+
+/* MASQUER BOUTON */
+button,
+select,
+input{
+display:none;
+}
+
+}
