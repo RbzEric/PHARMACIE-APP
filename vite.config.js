@@ -2,49 +2,62 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
-export default defineConfig({
-  base: '/PHARMACIE-APP/',
+export default defineConfig(({ mode }) => {
+  const isElectron = mode === 'electron'
 
-  plugins: [
-    react(),
+  return {
+    base: isElectron ? './' : '/PHARMACIE-APP/',
 
-    VitePWA({
-      registerType: 'autoUpdate',
+    plugins: [
+      react(),
 
-      includeAssets: ['icon-192.png', 'icon-512.png'],
+      VitePWA({
+        registerType: 'autoUpdate',
 
-      manifest: {
-        name: 'Pharmacie App',
-        short_name: 'Pharma',
-        description: 'Gestion pharmacie offline',
-        theme_color: '#ffffff',
-        background_color: '#ffffff',
-        display: 'standalone',
+        includeAssets: [
+          'icon-192.png',
+          'icon-512.png'
+        ],
 
-        start_url: '/PHARMACIE-APP/',
-        scope: '/PHARMACIE-APP/',
+        manifest: {
+          name: 'Pharmacie App',
+          short_name: 'Pharma',
+          description: 'Gestion pharmacie offline',
+          theme_color: '#ffffff',
+          background_color: '#ffffff',
+          display: 'standalone',
 
-        icons: [
-          {
-            src: '/PHARMACIE-APP/icon-192.png',
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: '/PHARMACIE-APP/icon-512.png',
-            sizes: '512x512',
-            type: 'image/png'
-          }
-        ]
-      },
+          start_url: isElectron ? './' : '/PHARMACIE-APP/',
+          scope: isElectron ? './' : '/PHARMACIE-APP/',
 
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
-      }
-    })
-  ],
+          icons: [
+            {
+              src: isElectron
+                ? './icon-192.png'
+                : '/PHARMACIE-APP/icon-192.png',
+              sizes: '192x192',
+              type: 'image/png'
+            },
+            {
+              src: isElectron
+                ? './icon-512.png'
+                : '/PHARMACIE-APP/icon-512.png',
+              sizes: '512x512',
+              type: 'image/png'
+            }
+          ]
+        },
 
-  build: {
-    outDir: 'dist'
+        workbox: {
+          globPatterns: [
+            '**/*.{js,css,html,ico,png,svg,wasm}'
+          ]
+        }
+      })
+    ],
+
+    build: {
+      outDir: 'dist'
+    }
   }
 })

@@ -14,7 +14,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "electron": ".\\electron\\electron.exe .",
-    "dist": "npm run build && electron-builder"
+    "dist": "vite build --mode electron && electron-builder"
   },
 
   "dependencies": {
