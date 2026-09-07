@@ -1,118 +1,256 @@
 import {
 
-getProduits as getProduitsSQLite,
+  getProduits as getProduitsSQLite,
 
-ajouterProduit as ajouterProduitSQLite,
+  ajouterProduit as ajouterProduitSQLite,
 
-ajouterMouvement,
+  ajouterMouvement,
 
-getMouvements as getMouvementsSQLite
+  getMouvements as getMouvementsSQLite,
+
+  getStockProduit,
+
+  getStockLot
 
 } from "./sqliteService";
 
 
-
-
+// ======================================================
 // PRODUITS
+// ======================================================
 
-export async function getProduits(){
+export async function getProduits() {
 
-return await getProduitsSQLite();
-
-}
-
-
-
-
-export async function ajouterProduit(produit){
-
-
-await ajouterProduitSQLite(produit);
-
-
-
-await ajouterMouvement({
-
-nom:produit.nom,
-
-date:produit.dateEntree 
-? produit.dateEntree
-: new Date().toLocaleDateString("fr-FR"),
-
-entree:Number(produit.quantite),
-
-sortie:0,
-
-observation:"Entrée stock"
-
-});
-
+  return await getProduitsSQLite();
 
 }
 
 
+// ======================================================
+// AJOUT PRODUIT
+// ======================================================
+
+export async function ajouterProduit(produit) {
+
+  // Ajouter ou récupérer produit existant
+  // selon NOM + TYPE + ORIGINE
+
+  const produitId =
+    await ajouterProduitSQLite(
+      produit
+    );
 
 
+  // ==============================================
+  // CREER MOUVEMENT D'ENTREE
+  // ==============================================
 
+  await ajouterMouvement({
+
+    produit_id:
+      produitId,
+
+    nom:
+      produit.nom,
+
+    origine:
+      produit.origine ||
+      "FANOME",
+
+    lot:
+      produit.lot ||
+      "",
+
+    date:
+      produit.dateEntree ||
+      new Date().toLocaleDateString(
+        "fr-FR"
+      ),
+
+    entree:
+      Number(produit.quantite || 0),
+
+    sortie:
+      0,
+
+    observation:
+      "Entrée stock"
+
+  });
+
+
+  return produitId;
+
+}
+
+
+// ======================================================
 // MOUVEMENTS
+// ======================================================
 
+export async function getMouvements() {
 
-export async function getMouvements(){
-
-return await getMouvementsSQLite();
-
-}
-
-
-
-
-
-// STOCK
-
-
-export async function calculStock(nom){
-
-const data = await getMouvements();
-
-
-return data
-
-.filter(m=>m.nom===nom)
-
-.reduce(
-
-(total,m)=>
-
-total + Number(m.entree) - Number(m.sortie),
-
-0
-
-);
+  return await getMouvementsSQLite();
 
 }
 
 
+// ======================================================
+// STOCK PRODUIT
+// ======================================================
+
+export async function calculStock(
+  produitId
+) {
+
+  return await getStockProduit(
+    produitId
+  );
+
+}
 
 
+// ======================================================
+// STOCK LOT
+// ======================================================
 
-// SORTIE
+export async function calculStockLot(
+  produitId,
+  lot
+) {
 
-export async function sortirProduit(nom,quantite){
+  return await getStockLot(
+    produitId,
+    lot
+  );
+
+}
 
 
-await ajouterMouvement({
+// ======================================================
+// SORTIE PRODUIT
+// ======================================================
 
-nom:nom,
+export async function sortirProduit(
+  produitId,
+  quantite
+) {
 
-date:new Date().toLocaleDateString("fr-FR"),
+  // ==============================================
+  // PRODUITS
+  // ==============================================
 
-entree:0,
+  const produits =
+    await getProduitsSQLite();
 
-sortie:Number(quantite),
 
-observation:"Vente"
+  const produit =
+    produits.find(
 
-});
+      p =>
+        Number(p.id) ===
+        Number(produitId)
 
+    );
+
+
+  if (!produit) {
+
+    console.error(
+      "Produit introuvable :",
+      produitId
+    );
+
+    return false;
+
+  }
+
+
+  // ==============================================
+  // QUANTITE
+  // ==============================================
+
+  const qte =
+    Number(quantite);
+
+
+  if (!qte || qte <= 0) {
+
+    alert(
+      "Quantité incorrecte"
+    );
+
+    return false;
+
+  }
+
+
+  // ==============================================
+  // STOCK ACTUEL
+  // ==============================================
+
+  const stockActuel =
+    await getStockProduit(
+      produit.id
+    );
+
+
+  // ==============================================
+  // VERIFICATION STOCK
+  // ==============================================
+
+  if (
+    qte > Number(stockActuel)
+  ) {
+
+    alert(
+
+      `Stock insuffisant pour ${produit.nom} (${produit.origine}). Stock disponible : ${stockActuel}`
+
+    );
+
+    return false;
+
+  }
+
+
+  // ==============================================
+  // SORTIE
+  // ==============================================
+
+  await ajouterMouvement({
+
+    produit_id:
+      produit.id,
+
+    nom:
+      produit.nom,
+
+    origine:
+      produit.origine ||
+      "FANOME",
+
+    lot:
+      produit.lot ||
+      "",
+
+    date:
+      new Date().toLocaleDateString(
+        "fr-FR"
+      ),
+
+    entree:
+      0,
+
+    sortie:
+      qte,
+
+    observation:
+      "Vente"
+
+  });
+
+
+  return true;
 
 }

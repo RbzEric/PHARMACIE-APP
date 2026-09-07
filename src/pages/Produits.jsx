@@ -1,382 +1,565 @@
 import { useEffect, useState } from "react";
 
 import {
-getProduits,
-ajouterProduit
+  getProduits,
+  ajouterProduit
 } from "../services/stockService";
 
 
 export default function Produits(){
 
 
-const [produits,setProduits] = useState([]);
+  const [produits,setProduits] = useState([]);
 
 
-const [form,setForm] = useState({
+  const [form,setForm] = useState({
 
-nom:"",
-quantite:"",
-prix:"",
-lot:"",
-dateEntree:"",
-expiration:"",
-type:"medicament"
+    nom:"",
+    quantite:"",
+    prix:"",
+    lot:"",
+    dateEntree:"",
+    expiration:"",
+    type:"medicament",
+    origine:"FANOME"
 
-});
+  });
 
 
 
-// ======================
-// CHARGER PRODUITS
-// ======================
+  // ======================
+  // CHARGER PRODUITS
+  // ======================
 
+  async function charger(){
 
-async function charger(){
+    const data = await getProduits();
 
+    setProduits(data);
 
-const data = await getProduits();
+  }
 
 
-setProduits(data);
+  useEffect(()=>{
 
+    charger();
 
-}
+  },[]);
 
 
 
-useEffect(()=>{
+  // ======================
+  // INPUT CHANGE
+  // ======================
 
-charger();
+  function handleChange(e){
 
-},[]);
+    const {name,value} = e.target;
 
+    setForm({
 
+      ...form,
 
+      [name]: value
 
-// ======================
-// INPUT CHANGE
-// ======================
+    });
 
+  }
 
-function handleChange(e){
 
 
-const {name,value}=e.target;
+  // ======================
+  // FORMAT DATE
+  // ======================
 
+  function formaterDate(date){
 
-setForm({
+    if(!date)
+      return "";
 
-...form,
+    const [annee,mois,jour] =
+      date.split("-");
 
-[name]:value
+    return `${jour}/${mois}/${annee}`;
 
-});
+  }
 
 
-}
 
+  // ======================
+  // AJOUT PRODUIT
+  // ======================
 
+  async function enregistrer(e){
 
+    e.preventDefault();
 
-// ======================
-// FORMAT DATE
-// ======================
 
+    if(!form.nom || !form.quantite){
 
-function formaterDate(date){
+      alert(
+        "Veuillez remplir le nom et la quantité"
+      );
 
+      return;
 
-if(!date)
-return "";
+    }
 
 
-const [annee,mois,jour]=date.split("-");
+    if(Number(form.quantite) <= 0){
 
+      alert(
+        "La quantité doit être supérieure à 0"
+      );
 
-return `${jour}/${mois}/${annee}`;
+      return;
 
+    }
 
-}
 
 
+    await ajouterProduit({
 
+      nom: form.nom,
 
-// ======================
-// AJOUT
-// ======================
+      quantite:
+        Number(form.quantite),
 
+      prix:
+        Number(form.prix || 0),
 
-async function enregistrer(e){
+      lot:
+        form.lot,
 
+      // IMPORTANT :
+      // stockService attend dateEntree
 
-e.preventDefault();
+      dateEntree:
+        formaterDate(
+          form.dateEntree
+        ),
 
+      date_expiration:
+        formaterDate(
+          form.expiration
+        ),
 
+      type:
+        form.type,
 
-if(!form.nom || !form.quantite)
-return;
+      origine:
+        form.origine
 
+    });
 
 
-await ajouterProduit({
 
-nom: form.nom,
-quantite:Number(form.quantite),
-prix:Number(form.prix),
-lot:form.lot,
-date_expiration:formaterDate(form.expiration),
-type:form.type
+    // Réinitialiser formulaire
 
-});
+    setForm({
 
+      nom:"",
 
-setForm({
+      quantite:"",
 
-nom:"",
-quantite:"",
-prix:"",
-lot:"",
-dateEntree:"",
-expiration:"",
-type:"medicament"
+      prix:"",
 
-});
+      lot:"",
 
+      dateEntree:"",
 
+      expiration:"",
 
-await charger();
+      type:"medicament",
 
+      origine:"FANOME"
 
+    });
 
-alert("Produit ajouté");
 
 
-}
+    await charger();
 
 
+    alert(
+      "Produit ajouté avec succès"
+    );
 
-return (
+  }
 
-<div>
 
 
-<h2>Ajout produit</h2>
+  return (
 
+    <div>
 
 
-<form onSubmit={enregistrer}>
+      <h2>
+        Ajout produit
+      </h2>
 
 
-<select
 
-name="type"
+      <form onSubmit={enregistrer}>
 
-value={form.type}
 
-onChange={handleChange}
+        {/* ======================
+            TYPE
+        ====================== */}
 
->
+        <label>
+          Type de produit :
+        </label>
 
-<option value="medicament">
-Médicament
-</option>
 
+        <select
 
-<option value="consommable">
-Consommable
-</option>
+          name="type"
 
+          value={form.type}
 
-</select>
+          onChange={handleChange}
 
+        >
 
+          <option value="medicament">
+            Médicament
+          </option>
 
+          <option value="consommable">
+            Consommable
+          </option>
 
-<input
+        </select>
 
-name="nom"
 
-placeholder="Nom produit"
 
-value={form.nom}
+        {/* ======================
+            ORIGINE
+        ====================== */}
 
-onChange={handleChange}
+        <label>
+          Origine / Source :
+        </label>
 
-/>
 
+        <select
 
+          name="origine"
 
-<input
+          value={form.origine}
 
-name="quantite"
+          onChange={handleChange}
 
-type="number"
+        >
 
-placeholder="Quantité"
+          <option value="FANOME">
+            FANOME
+          </option>
 
-value={form.quantite}
+          <option value="FOND D'URGENCE">
+            FOND D'URGENCE
+          </option>
 
-onChange={handleChange}
+          <option value="BUDGET DE L'ÉTAT">
+            BUDGET DE L'ÉTAT
+          </option>
 
-/>
+        </select>
 
 
 
-<input
+        {/* ======================
+            NOM
+        ====================== */}
 
-name="prix"
+        <label>
+          Nom du produit :
+        </label>
 
-type="number"
 
-placeholder="Prix"
+        <input
 
-value={form.prix}
+          name="nom"
 
-onChange={handleChange}
+          placeholder="Ex: Paracétamol 500 mg"
 
-/>
+          value={form.nom}
 
+          onChange={handleChange}
 
+        />
 
-<input
 
-name="lot"
 
-placeholder="N° lot"
+        {/* ======================
+            QUANTITE
+        ====================== */}
 
-value={form.lot}
+        <label>
+          Quantité :
+        </label>
 
-onChange={handleChange}
 
-/>
+        <input
 
+          name="quantite"
 
-<label htmlFor="">Date d'entrée :</label> <br />
-<input
+          type="number"
 
-name="dateEntree"
+          min="1"
 
-type="date"
+          placeholder="Quantité"
 
-value={form.dateEntree}
+          value={form.quantite}
 
-onChange={handleChange}
+          onChange={handleChange}
 
-/>
+        />
 
 
-<label htmlFor="">Date de péremption :</label> <br />
-<input
 
-name="expiration"
+        {/* ======================
+            PRIX
+        ====================== */}
 
-type="date"
+        <label>
+          Prix :
+        </label>
 
-value={form.expiration}
 
-onChange={handleChange}
+        <input
 
-/>
+          name="prix"
 
+          type="number"
 
+          min="0"
 
-<button type="submit">
+          placeholder="Prix"
 
-Ajouter
+          value={form.prix}
 
-</button>
+          onChange={handleChange}
 
+        />
 
 
-</form>
 
+        {/* ======================
+            LOT
+        ====================== */}
 
+        <label>
+          N° lot :
+        </label>
 
-<hr/>
 
+        <input
 
+          name="lot"
 
+          placeholder="N° lot"
 
-<h2>Liste des produits</h2>
+          value={form.lot}
 
+          onChange={handleChange}
 
+        />
 
-<table border="1">
 
 
-<thead>
+        {/* ======================
+            DATE ENTREE
+        ====================== */}
 
-<tr>
+        <label>
+          Date d'entrée :
+        </label>
 
-<th>Nom</th>
 
-<th>Quantité</th>
+        <br />
 
-<th>Prix</th>
 
-<th>Lot</th>
+        <input
 
-<th>Expiration</th>
+          name="dateEntree"
 
-<th>Type</th>
+          type="date"
 
+          value={form.dateEntree}
 
-</tr>
+          onChange={handleChange}
 
+        />
 
-</thead>
 
 
+        {/* ======================
+            EXPIRATION
+        ====================== */}
 
-<tbody>
+        <label>
+          Date de péremption :
+        </label>
 
 
-{
+        <br />
 
-produits.map(p=>(
 
+        <input
 
-<tr key={p.id}>
+          name="expiration"
 
+          type="date"
 
-<td>{p.nom}</td>
+          value={form.expiration}
 
+          onChange={handleChange}
 
-<td>{p.quantite}</td>
+        />
 
 
-<td>{p.prix} Ar</td>
 
+        <br />
+        <br />
 
-<td>{p.lot}</td>
 
+        <button type="submit">
 
-<td>{p.date_expiration}</td>
+          Ajouter
 
+        </button>
 
-<td>{p.type}</td>
 
+      </form>
 
-</tr>
 
 
-))
+      <hr />
 
 
-}
 
+      {/* ======================
+          LISTE PRODUITS
+      ====================== */}
 
+      <h2>
+        Liste des produits
+      </h2>
 
-</tbody>
 
 
-</table>
+      <table border="1">
 
 
+        <thead>
 
-</div>
+          <tr>
 
-);
+            <th>
+              Nom
+            </th>
 
+            <th>
+              Quantité
+            </th>
+
+            <th>
+              Prix
+            </th>
+
+            <th>
+              Lot
+            </th>
+
+            <th>
+              Date entrée
+            </th>
+
+            <th>
+              Expiration
+            </th>
+
+            <th>
+              Type
+            </th>
+
+            <th>
+              Origine
+            </th>
+
+          </tr>
+
+        </thead>
+
+
+
+        <tbody>
+
+
+          {
+
+            produits.map(p => (
+
+              <tr key={p.id}>
+
+
+                <td>
+                  {p.nom}
+                </td>
+
+
+                <td>
+                  {p.quantite}
+                </td>
+
+
+                <td>
+                  {p.prix} Ar
+                </td>
+
+
+                <td>
+                  {p.lot}
+                </td>
+
+
+                <td>
+                  {p.date_entree}
+                </td>
+
+
+                <td>
+                  {p.date_expiration}
+                </td>
+
+
+                <td>
+                  {p.type}
+                </td>
+
+
+                <td>
+                  {p.origine}
+                </td>
+
+
+              </tr>
+
+            ))
+
+          }
+
+
+        </tbody>
+
+
+      </table>
+
+
+    </div>
+
+  );
 
 }

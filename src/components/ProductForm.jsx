@@ -1,516 +1,848 @@
 import { useEffect, useState } from "react";
+
 import {
   getProduits,
   sortirProduit
 } from "../services/stockService";
 
 
+// ==========================================
+// NOM AFFICHAGE SELON ORIGINE
+// ==========================================
+
+function nomAffichage(produit) {
+
+  if (!produit) return "";
+
+  if (produit.origine === "FOND D'URGENCE") {
+
+    return `${produit.nom} (FU)`;
+
+  }
+
+  if (produit.origine === "BUDGET DE L'ÉTAT") {
+
+    return `${produit.nom} (BE)`;
+
+  }
+
+  return produit.nom;
+
+}
+
+
+
+// ==========================================
+// LABEL ORIGINE COURT
+// ==========================================
+
+function origineCourt(origine) {
+
+  if (origine === "FOND D'URGENCE") {
+    return "FU";
+  }
+
+  if (origine === "BUDGET DE L'ÉTAT") {
+    return "BE";
+  }
+
+  return "FANOME";
+
+}
+
+
+
 export default function PatientForm(){
 
-const [produits,setProduits] = useState([]);
 
-const [patient,setPatient] = useState("");
+  const [produits,setProduits] = useState([]);
 
-const [recherche,setRecherche] = useState("");
+  const [patient,setPatient] = useState("");
 
-const [selection,setSelection] = useState(null);
+  const [recherche,setRecherche] = useState("");
 
-const [quantite,setQuantite] = useState("");
+  const [selection,setSelection] = useState(null);
 
-const [ordonnance,setOrdonnance] = useState([]);
+  const [quantite,setQuantite] = useState("");
 
+  const [ordonnance,setOrdonnance] = useState([]);
 
 
-// Chargement des produits ajoutés
 
-useEffect(()=>{
+  // ==========================================
+  // CHARGEMENT DES PRODUITS
+  // ==========================================
 
-setProduits(getProduits());
+  async function charger(){
 
-},[]);
+    const data = await getProduits();
 
+    console.log("PRODUITS RECUS PAR PATIENT :", data);
 
+    setProduits(data);
 
+  }
 
 
-// Recherche dynamique
 
-const resultat = produits.filter(p=>
+  useEffect(()=>{
 
-p.nom &&
+    charger();
 
-p.nom
-.toLowerCase()
-.includes(
-recherche.toLowerCase()
-)
+  },[]);
 
-);
 
 
+  // ==========================================
+  // RECHERCHE
+  // ==========================================
 
+  const resultat = produits.filter(p =>
 
+    p.nom &&
 
-// Choisir produit dans suggestion
+    p.nom
+      .toLowerCase()
+      .includes(
+        recherche.toLowerCase()
+      )
 
-function choisirProduit(p){
+  );
 
-setSelection(p);
 
-setRecherche(p.nom);
 
-}
+  // ==========================================
+  // CHOISIR PRODUIT
+  // ==========================================
 
+  function choisirProduit(p){
 
+    setSelection(p);
 
+    setRecherche(
+      nomAffichage(p)
+    );
 
+  }
 
-// Ajouter ligne facture
 
-function ajouterProduit(){
 
+  // ==========================================
+  // AJOUTER LIGNE
+  // ==========================================
 
-if(!selection){
+  function ajouterProduit(){
 
-alert("Veuillez choisir un médicament dans la liste");
+    if(!selection){
 
-return;
+      alert(
+        "Veuillez choisir un produit dans la liste"
+      );
 
-}
+      return;
 
+    }
 
 
-if(!quantite || Number(quantite)<=0){
 
-alert("Quantité incorrecte");
+    if(
+      !quantite ||
+      Number(quantite) <= 0
+    ){
 
-return;
+      alert(
+        "Quantité incorrecte"
+      );
 
-}
+      return;
 
+    }
 
 
 
-const ligne={
+    // Vérifier si le même produit
+    // est déjà dans l'ordonnance
 
+    const existe = ordonnance.find(
+      item =>
+        Number(item.produit.id) ===
+        Number(selection.id)
+    );
 
-produit:selection,
 
+    if(existe){
 
-quantite:Number(quantite),
+      alert(
+        "Ce produit est déjà ajouté à l'ordonnance"
+      );
 
+      return;
 
-prixUnitaire:Number(selection.prix),
+    }
 
 
-prixTotal:
 
-Number(quantite) *
-Number(selection.prix)
+    const ligne = {
 
+      produit: selection,
 
-};
+      quantite:
+        Number(quantite),
 
+      prixUnitaire:
+        Number(selection.prix || 0),
 
+      prixTotal:
 
-setOrdonnance([
+        Number(quantite) *
+        Number(selection.prix || 0)
 
-...ordonnance,
+    };
 
-ligne
 
-]);
 
+    setOrdonnance([
 
+      ...ordonnance,
 
-setSelection(null);
+      ligne
 
-setRecherche("");
+    ]);
 
-setQuantite("");
 
-}
 
+    setSelection(null);
 
+    setRecherche("");
 
+    setQuantite("");
 
+  }
 
-// Supprimer ligne
 
-function supprimer(index){
 
-setOrdonnance(
+  // ==========================================
+  // SUPPRIMER
+  // ==========================================
 
-ordonnance.filter(
+  function supprimer(index){
 
-(_,i)=>i!==index
+    setOrdonnance(
 
-)
+      ordonnance.filter(
+        (_,i) => i !== index
+      )
 
-);
+    );
 
-}
+  }
 
 
 
+  // ==========================================
+  // TOTAL
+  // ==========================================
 
+  const totalGeneral =
+    ordonnance.reduce(
 
-// Total
+      (total,item) =>
 
-const totalGeneral = ordonnance.reduce(
+        total + item.prixTotal,
 
-(total,item)=>
+      0
 
-total + item.prixTotal,
+    );
 
-0
 
-);
 
+  // ==========================================
+  // VALIDATION
+  // ==========================================
 
+  async function valider(){
 
+    if(!patient){
 
+      alert(
+        "Entrer le nom du patient"
+      );
 
+      return;
 
-// Validation vente
+    }
 
-function valider(){
 
 
-if(!patient){
+    if(ordonnance.length === 0){
 
-alert("Entrer le nom du patient");
+      alert(
+        "Aucun produit sélectionné"
+      );
 
-return;
+      return;
 
-}
+    }
 
 
 
-if(ordonnance.length===0){
+    // ========================================
+    // SORTIES
+    // ========================================
 
-alert("Aucun produit sélectionné");
+    for(const item of ordonnance){
 
-return;
+      const success =
+        await sortirProduit(
 
-}
+          item.produit.id,
 
+          item.quantite
 
+        );
 
 
-ordonnance.forEach(item=>{
+      // Si une sortie échoue
+      if(!success){
 
+        return;
 
-sortirProduit(
+      }
 
-item.produit.nom,
+    }
 
-item.quantite
 
-);
 
+    // ========================================
+    // SUCCÈS
+    // ========================================
 
-});
+    alert(
+      "Vente enregistrée"
+    );
 
 
+    setPatient("");
 
-alert("Vente enregistrée");
+    setOrdonnance([]);
 
+    setRecherche("");
 
+    setSelection(null);
 
-setPatient("");
+    setQuantite("");
 
-setOrdonnance([]);
 
-}
+    // Recharger les produits
+    await charger();
 
+  }
 
 
 
+  return (
 
-return (
+    <div className="card">
 
-<div className="card">
 
+      <h2>
+        Ajout Patient / Vente
+      </h2>
 
-<h2>
-Ajout Patient / Vente
-</h2>
 
 
+      {/* ==================================
+          PATIENT
+      ================================== */}
 
-<input
+      <input
 
-placeholder="Nom du patient"
+        placeholder="Nom du patient"
 
-value={patient}
+        value={patient}
 
-onChange={e=>setPatient(e.target.value)}
+        onChange={e =>
+          setPatient(e.target.value)
+        }
 
-/>
+      />
 
 
 
+      <h3>
+        Rechercher médicament
+      </h3>
 
 
-<h3>
-Rechercher médicament
-</h3>
 
+      {/* ==================================
+          RECHERCHE
+      ================================== */}
 
+      <input
 
-<input
+        placeholder="Ex: para"
 
-placeholder="Ex: para"
+        value={recherche}
 
-value={recherche}
+        onChange={e => {
 
-onChange={e=>{
+          setRecherche(
+            e.target.value
+          );
 
-setRecherche(e.target.value);
+          setSelection(null);
 
-setSelection(null);
+        }}
 
-}}
+      />
 
-/>
 
 
+      {/* ==================================
+          LISTE RECHERCHE
+      ================================== */}
 
+      {
 
+        recherche &&
+        !selection && (
 
-{
+          <div className="liste-recherche">
 
-recherche && !selection && (
 
-<div className="liste-recherche">
+            {
 
+              resultat.length === 0 ? (
 
-{
+                <div className="suggestion">
 
-resultat.map(p=>(
+                  Aucun produit trouvé
 
+                </div>
 
-<div
+              ) : (
 
-key={p.id}
+                resultat.map(p => (
 
-className="suggestion"
+                  <div
 
-onClick={()=>choisirProduit(p)}
+                    key={p.id}
 
->
+                    className="suggestion"
 
-{p.nom}
+                    onClick={() =>
+                      choisirProduit(p)
+                    }
 
-</div>
+                  >
 
+                    <b>
 
-))
+                      {nomAffichage(p)}
 
+                    </b>
 
-}
 
+                    <br />
 
 
-</div>
+                    <small>
 
-)
+                      {
 
-}
+                        p.type ===
+                        "medicament"
 
+                          ? "Médicament"
 
+                          : "Consommable"
 
+                      }
 
 
+                      {" • "}
 
 
-{
+                      <strong>
 
-selection && (
+                        {
+                          origineCourt(
+                            p.origine
+                          )
+                        }
 
-<p>
+                      </strong>
 
-Produit choisi :
 
-<b>
-{selection.nom}
-</b>
+                      {" • Lot: "}
 
-<br/>
 
-Prix :
+                      {
+                        p.lot || "-"
+                      }
 
-{selection.prix} Ar
 
-</p>
+                      {" • Stock: "}
 
-)
 
-}
+                      {
+                        p.quantite
+                      }
 
+                    </small>
 
+                  </div>
 
+                ))
 
+              )
 
+            }
 
 
-<input
+          </div>
 
-type="number"
+        )
 
-placeholder="Quantité"
+      }
 
-value={quantite}
 
-onChange={e=>setQuantite(e.target.value)}
 
-/>
+      {/* ==================================
+          PRODUIT CHOISI
+      ================================== */}
 
+      {
 
+        selection && (
 
+          <div>
 
 
-<button onClick={ajouterProduit}>
+            <p>
 
-Ajouter ligne
+              Produit choisi :
 
-</button>
 
+              {" "}
 
 
+              <b>
 
+                {
+                  nomAffichage(
+                    selection
+                  )
+                }
 
+              </b>
 
-<h3>
-Facture
-</h3>
 
+              <br />
 
 
-<table>
+              Origine :
 
 
-<thead>
+              {" "}
 
-<tr>
 
-<th>Produit</th>
+              {
+                selection.origine
+              }
 
-<th>Quantité</th>
 
-<th>Prix unitaire</th>
+              <br />
 
-<th>Total</th>
 
-<th></th>
+              Lot :
 
-</tr>
 
+              {" "}
 
-</thead>
 
+              {
+                selection.lot || "-"
+              }
 
 
-<tbody>
+              <br />
 
 
-{
+              Stock disponible :
 
-ordonnance.map((item,index)=>(
 
+              {" "}
 
-<tr key={index}>
 
+              <b>
 
-<td>
-{item.produit.nom}
-</td>
+                {
+                  selection.quantite
+                }
 
+              </b>
 
-<td>
-{item.quantite}
-</td>
 
+              <br />
 
-<td>
-{item.prixUnitaire} Ar
-</td>
 
+              Prix :
 
-<td>
-{item.prixTotal} Ar
-</td>
 
+              {" "}
 
-<td>
 
-<button
+              {
+                selection.prix
+              } Ar
 
-onClick={()=>supprimer(index)}
+            </p>
 
->
 
-X
+          </div>
 
-</button>
+        )
 
+      }
 
-</td>
 
 
-</tr>
+      {/* ==================================
+          QUANTITE
+      ================================== */}
 
+      <input
 
-))
+        type="number"
 
+        min="1"
 
-}
+        placeholder="Quantité"
 
+        value={quantite}
 
+        onChange={e =>
+          setQuantite(e.target.value)
+        }
 
-<tr>
+      />
 
-<td colSpan="3">
 
-<b>Total</b>
 
-</td>
+      <button
+        onClick={ajouterProduit}
+      >
 
+        Ajouter ligne
 
-<td>
+      </button>
 
-<b>
-{totalGeneral} Ar
-</b>
 
-</td>
 
+      {/* ==================================
+          FACTURE
+      ================================== */}
 
-</tr>
+      <h3>
+        Facture
+      </h3>
 
 
 
-</tbody>
+      <table>
 
 
-</table>
+        <thead>
 
+          <tr>
 
+            <th>
+              Produit
+            </th>
 
+            <th>
+              Origine
+            </th>
 
+            <th>
+              Lot
+            </th>
 
+            <th>
+              Quantité
+            </th>
 
-<button onClick={valider}>
+            <th>
+              Prix unitaire
+            </th>
 
-Valider Vente
+            <th>
+              Total
+            </th>
 
-</button>
+            <th>
+            </th>
 
+          </tr>
 
+        </thead>
 
-</div>
 
-);
+
+        <tbody>
+
+
+          {
+
+            ordonnance.map(
+              (item,index) => (
+
+                <tr key={index}>
+
+
+                  <td>
+
+                    {
+                      item.produit.nom
+                    }
+
+                  </td>
+
+
+                  <td>
+
+                    {
+                      origineCourt(
+                        item.produit.origine
+                      )
+                    }
+
+                  </td>
+
+
+                  <td>
+
+                    {
+                      item.produit.lot ||
+                      "-"
+                    }
+
+                  </td>
+
+
+                  <td>
+
+                    {
+                      item.quantite
+                    }
+
+                  </td>
+
+
+                  <td>
+
+                    {
+                      item.prixUnitaire
+                    } Ar
+
+                  </td>
+
+
+                  <td>
+
+                    {
+                      item.prixTotal
+                    } Ar
+
+                  </td>
+
+
+                  <td>
+
+                    <button
+
+                      onClick={() =>
+                        supprimer(index)
+                      }
+
+                    >
+
+                      X
+
+                    </button>
+
+                  </td>
+
+
+                </tr>
+
+              )
+
+            )
+
+          }
+
+
+
+          <tr>
+
+
+            <td
+              colSpan="5"
+            >
+
+              <b>
+                Total
+              </b>
+
+            </td>
+
+
+            <td>
+
+              <b>
+
+                {
+                  totalGeneral
+                } Ar
+
+              </b>
+
+            </td>
+
+
+            <td>
+            </td>
+
+
+          </tr>
+
+
+        </tbody>
+
+
+      </table>
+
+
+
+      {/* ==================================
+          VALIDER
+      ================================== */}
+
+      <button
+        onClick={valider}
+      >
+
+        Valider Vente
+
+      </button>
+
+
+
+    </div>
+
+  );
 
 }
