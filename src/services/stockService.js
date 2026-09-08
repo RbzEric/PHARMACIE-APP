@@ -1,16 +1,16 @@
 import {
-
   getProduits as getProduitsSQLite,
-
   ajouterProduit as ajouterProduitSQLite,
-
   ajouterMouvement,
-
   getMouvements as getMouvementsSQLite,
-
   getStockProduit,
+  getStockLot,
 
-  getStockLot
+  enregistrerInventaire as enregistrerInventaireSQLite,
+  enregistrerInventaires as enregistrerInventairesSQLite,
+  getInventaire as getInventaireSQLite,
+  getHistoriqueInventaires as getHistoriqueInventairesSQLite,
+  supprimerInventaire as supprimerInventaireSQLite
 
 } from "./sqliteService";
 
@@ -27,23 +27,14 @@ export async function getProduits() {
 
 
 // ======================================================
-// AJOUT PRODUIT
+// AJOUTER PRODUIT
 // ======================================================
 
 export async function ajouterProduit(produit) {
 
-  // Ajouter ou récupérer produit existant
-  // selon NOM + TYPE + ORIGINE
-
   const produitId =
-    await ajouterProduitSQLite(
-      produit
-    );
+    await ajouterProduitSQLite(produit);
 
-
-  // ==============================================
-  // CREER MOUVEMENT D'ENTREE
-  // ==============================================
 
   await ajouterMouvement({
 
@@ -54,18 +45,14 @@ export async function ajouterProduit(produit) {
       produit.nom,
 
     origine:
-      produit.origine ||
-      "FANOME",
+      produit.origine || "FANOME",
 
     lot:
-      produit.lot ||
-      "",
+      produit.lot || "",
 
     date:
       produit.dateEntree ||
-      new Date().toLocaleDateString(
-        "fr-FR"
-      ),
+      new Date().toLocaleDateString("fr-FR"),
 
     entree:
       Number(produit.quantite || 0),
@@ -96,7 +83,7 @@ export async function getMouvements() {
 
 
 // ======================================================
-// STOCK PRODUIT
+// STOCK
 // ======================================================
 
 export async function calculStock(
@@ -109,10 +96,6 @@ export async function calculStock(
 
 }
 
-
-// ======================================================
-// STOCK LOT
-// ======================================================
 
 export async function calculStockLot(
   produitId,
@@ -136,21 +119,15 @@ export async function sortirProduit(
   quantite
 ) {
 
-  // ==============================================
-  // PRODUITS
-  // ==============================================
-
   const produits =
     await getProduitsSQLite();
 
 
   const produit =
     produits.find(
-
       p =>
         Number(p.id) ===
         Number(produitId)
-
     );
 
 
@@ -165,10 +142,6 @@ export async function sortirProduit(
 
   }
 
-
-  // ==============================================
-  // QUANTITE
-  // ==============================================
 
   const qte =
     Number(quantite);
@@ -185,27 +158,24 @@ export async function sortirProduit(
   }
 
 
-  // ==============================================
-  // STOCK ACTUEL
-  // ==============================================
-
   const stockActuel =
     await getStockProduit(
       produit.id
     );
 
 
-  // ==============================================
-  // VERIFICATION STOCK
-  // ==============================================
-
   if (
-    qte > Number(stockActuel)
+    qte >
+    Number(stockActuel)
   ) {
 
     alert(
 
-      `Stock insuffisant pour ${produit.nom} (${produit.origine}). Stock disponible : ${stockActuel}`
+      `Stock insuffisant pour ${
+        produit.nom
+      } (${produit.origine}). Stock disponible : ${
+        stockActuel
+      }`
 
     );
 
@@ -213,10 +183,6 @@ export async function sortirProduit(
 
   }
 
-
-  // ==============================================
-  // SORTIE
-  // ==============================================
 
   await ajouterMouvement({
 
@@ -227,17 +193,13 @@ export async function sortirProduit(
       produit.nom,
 
     origine:
-      produit.origine ||
-      "FANOME",
+      produit.origine || "FANOME",
 
     lot:
-      produit.lot ||
-      "",
+      produit.lot || "",
 
     date:
-      new Date().toLocaleDateString(
-        "fr-FR"
-      ),
+      new Date().toLocaleDateString("fr-FR"),
 
     entree:
       0,
@@ -252,5 +214,64 @@ export async function sortirProduit(
 
 
   return true;
+
+}
+
+
+// ======================================================
+// INVENTAIRE
+// ======================================================
+
+export async function enregistrerInventaire(
+  inventaire
+) {
+
+  return await enregistrerInventaireSQLite(
+    inventaire
+  );
+
+}
+
+
+export async function enregistrerInventaires(
+  inventaires
+) {
+
+  return await enregistrerInventairesSQLite(
+    inventaires
+  );
+
+}
+
+
+export async function getInventaire(
+  mois,
+  annee
+) {
+
+  return await getInventaireSQLite(
+    mois,
+    annee
+  );
+
+}
+
+
+export async function getHistoriqueInventaires() {
+
+  return await getHistoriqueInventairesSQLite();
+
+}
+
+
+export async function supprimerInventaire(
+  mois,
+  annee
+) {
+
+  return await supprimerInventaireSQLite(
+    mois,
+    annee
+  );
 
 }

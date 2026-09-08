@@ -38,6 +38,10 @@ Patients
 Rapport
 </NavLink>
 
+<NavLink to="/inventaire">
+  Inventaire
+</NavLink>
+
 
 </div>
 

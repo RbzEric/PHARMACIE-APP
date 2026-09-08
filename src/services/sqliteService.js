@@ -20,6 +20,7 @@ function saveDatabase() {
     "pharmacie-db",
     JSON.stringify(array)
   );
+
 }
 
 
@@ -32,6 +33,7 @@ function normaliserTexte(value) {
   return String(value || "")
     .trim()
     .toUpperCase();
+
 }
 
 
@@ -157,6 +159,39 @@ export function initDB() {
 
 
         // ==============================================
+        // TABLE INVENTAIRES
+        // ==============================================
+
+        db.run(`
+
+          CREATE TABLE IF NOT EXISTS inventaires (
+
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            mois INTEGER NOT NULL,
+
+            annee INTEGER NOT NULL,
+
+            produit_nom TEXT NOT NULL,
+
+            type TEXT,
+
+            origine TEXT,
+
+            stock_theorique INTEGER DEFAULT 0,
+
+            stock_physique INTEGER DEFAULT 0,
+
+            ecart INTEGER DEFAULT 0,
+
+            date_inventaire TEXT
+
+          );
+
+        `);
+
+
+        // ==============================================
         // MIGRATION PRODUITS
         // ==============================================
 
@@ -188,6 +223,16 @@ export function initDB() {
           db.run(`
             ALTER TABLE produits
             ADD COLUMN origine TEXT
+          `);
+
+        }
+
+
+        if (!nomsProduits.includes("type")) {
+
+          db.run(`
+            ALTER TABLE produits
+            ADD COLUMN type TEXT
           `);
 
         }
@@ -282,14 +327,31 @@ export function initDB() {
 
         // ==============================================
         // CONSOLIDATION DES DOUBLONS
-        //
-        // IMPORTANT :
-        // nom + type + origine
-        //
-        // LOT NON PRIS EN COMPTE
         // ==============================================
 
         consoliderDoublons();
+
+
+        // ==============================================
+        // INDEX INVENTAIRE
+        // ==============================================
+
+        db.run(`
+
+          CREATE UNIQUE INDEX IF NOT EXISTS
+          idx_inventaire_produit_mois
+
+          ON inventaires (
+
+            mois,
+            annee,
+            produit_nom,
+            type,
+            origine
+
+          );
+
+        `);
 
 
         console.log(
@@ -305,6 +367,7 @@ export function initDB() {
 
 
   return dbReady;
+
 }
 
 
@@ -361,10 +424,6 @@ function consoliderDoublons() {
   const groupes = new Map();
 
 
-  // ==============================================
-  // GROUPEMENT
-  // ==============================================
-
   for (const produit of produits) {
 
     const key = [
@@ -395,10 +454,6 @@ function consoliderDoublons() {
   }
 
 
-  // ==============================================
-  // FUSION
-  // ==============================================
-
   for (const groupe of groupes.values()) {
 
     if (groupe.length <= 1) {
@@ -407,8 +462,6 @@ function consoliderDoublons() {
 
     }
 
-
-    // Le plus petit ID devient le produit principal
 
     const principal =
       groupe[0];
@@ -419,10 +472,6 @@ function consoliderDoublons() {
 
 
     for (const doublon of doublons) {
-
-      // ==========================================
-      // TRANSFERER LES MOUVEMENTS
-      // ==========================================
 
       db.run(`
 
@@ -443,10 +492,6 @@ function consoliderDoublons() {
       ]);
 
 
-      // ==========================================
-      // SUPPRIMER DOUBLON
-      // ==========================================
-
       db.run(`
 
         DELETE FROM produits
@@ -463,10 +508,6 @@ function consoliderDoublons() {
 
     }
 
-
-    // ==========================================
-    // RECALCUL QUANTITE
-    // ==========================================
 
     const stock =
       calculerStockInterne(
@@ -556,7 +597,11 @@ export async function getProduits() {
 
     FROM produits
 
-    ORDER BY nom ASC, type ASC, origine ASC, id ASC
+    ORDER BY
+      nom ASC,
+      type ASC,
+      origine ASC,
+      id ASC
 
   `);
 
@@ -570,9 +615,11 @@ export async function getProduits() {
 
   return res[0].values.map(row => ({
 
-    id: Number(row[0]),
+    id:
+      Number(row[0]),
 
-    nom: row[1] || "",
+    nom:
+      row[1] || "",
 
     quantite:
       Number(row[2] || 0),
@@ -602,11 +649,6 @@ export async function getProduits() {
 
 // ======================================================
 // AJOUTER PRODUIT
-//
-// Si même nom + type + origine existe déjà :
-// ON NE CREE PAS UN NOUVEAU PRODUIT.
-//
-// On retourne simplement l'ID existant.
 // ======================================================
 
 export async function ajouterProduit(p) {
@@ -626,10 +668,6 @@ export async function ajouterProduit(p) {
     p.origine || "FANOME";
 
 
-  // ==============================================
-  // CHERCHER PRODUIT EXISTANT
-  // ==============================================
-
   const existant =
     db.exec(`
 
@@ -637,7 +675,8 @@ export async function ajouterProduit(p) {
 
       FROM produits
 
-      WHERE UPPER(TRIM(nom)) = UPPER(TRIM(?))
+      WHERE UPPER(TRIM(nom)) =
+            UPPER(TRIM(?))
 
       AND UPPER(TRIM(type)) =
           UPPER(TRIM(?))
@@ -654,17 +693,11 @@ export async function ajouterProduit(p) {
     [
 
       nom,
-
       type,
-
       origine
 
     ]);
 
-
-  // ==============================================
-  // PRODUIT EXISTE
-  // ==============================================
 
   if (
     existant.length > 0 &&
@@ -676,8 +709,6 @@ export async function ajouterProduit(p) {
         existant[0].values[0][0]
       );
 
-
-    // Mettre à jour certaines informations
 
     db.run(`
 
@@ -718,10 +749,6 @@ export async function ajouterProduit(p) {
   }
 
 
-  // ==============================================
-  // NOUVEAU PRODUIT
-  // ==============================================
-
   db.run(`
 
     INSERT INTO produits
@@ -729,19 +756,12 @@ export async function ajouterProduit(p) {
     (
 
       nom,
-
       quantite,
-
       prix,
-
       lot,
-
       date_entree,
-
       date_expiration,
-
       type,
-
       origine
 
     )
@@ -845,19 +865,12 @@ export async function ajouterMouvement(m) {
     (
 
       produit_id,
-
       nom,
-
       origine,
-
       lot,
-
       date,
-
       entree,
-
       sortie,
-
       observation
 
     )
@@ -891,10 +904,6 @@ export async function ajouterMouvement(m) {
 
   ]);
 
-
-  // ==============================================
-  // METTRE A JOUR QUANTITE PRODUIT
-  // ==============================================
 
   if (
     m.produit_id !== undefined &&
@@ -1089,10 +1098,6 @@ export async function getStockProduit(
 
 // ======================================================
 // STOCK PAR LOT
-//
-// Conservé pour compatibilité.
-// Mais la logique principale du système
-// ne dépend PAS du lot.
 // ======================================================
 
 export async function getStockLot(
@@ -1145,5 +1150,588 @@ export async function getStockLot(
   return Number(
     res[0].values[0][0] || 0
   );
+
+}
+
+
+// ======================================================
+// ENREGISTRER INVENTAIRE
+// ======================================================
+
+export async function enregistrerInventaire(
+  inventaire
+) {
+
+  await initDB();
+
+
+  const mois =
+    Number(inventaire.mois);
+
+  const annee =
+    Number(inventaire.annee);
+
+  const produitNom =
+    String(
+      inventaire.produit_nom || ""
+    ).trim();
+
+  const type =
+    String(
+      inventaire.type || "medicament"
+    ).trim();
+
+  const origine =
+    String(
+      inventaire.origine || "FANOME"
+    ).trim();
+
+  const stockTheorique =
+    Number(
+      inventaire.stock_theorique || 0
+    );
+
+  const stockPhysique =
+    Number(
+      inventaire.stock_physique || 0
+    );
+
+  const ecart =
+    stockPhysique - stockTheorique;
+
+  const dateInventaire =
+    inventaire.date_inventaire ||
+    new Date().toLocaleDateString("fr-FR");
+
+
+  // ==============================================
+  // CHERCHER SI EXISTE DEJA
+  // ==============================================
+
+  const existant =
+    db.exec(`
+
+      SELECT id
+
+      FROM inventaires
+
+      WHERE mois = ?
+
+      AND annee = ?
+
+      AND produit_nom = ?
+
+      AND type = ?
+
+      AND origine = ?
+
+      LIMIT 1
+
+    `,
+
+    [
+
+      mois,
+      annee,
+      produitNom,
+      type,
+      origine
+
+    ]);
+
+
+  if (
+    existant.length > 0 &&
+    existant[0].values.length > 0
+  ) {
+
+    const id =
+      Number(
+        existant[0].values[0][0]
+      );
+
+
+    db.run(`
+
+      UPDATE inventaires
+
+      SET
+
+        stock_theorique = ?,
+
+        stock_physique = ?,
+
+        ecart = ?,
+
+        date_inventaire = ?
+
+      WHERE id = ?
+
+    `,
+
+    [
+
+      stockTheorique,
+
+      stockPhysique,
+
+      ecart,
+
+      dateInventaire,
+
+      id
+
+    ]);
+
+  } else {
+
+    db.run(`
+
+      INSERT INTO inventaires
+
+      (
+
+        mois,
+        annee,
+        produit_nom,
+        type,
+        origine,
+        stock_theorique,
+        stock_physique,
+        ecart,
+        date_inventaire
+
+      )
+
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+
+    `,
+
+    [
+
+      mois,
+
+      annee,
+
+      produitNom,
+
+      type,
+
+      origine,
+
+      stockTheorique,
+
+      stockPhysique,
+
+      ecart,
+
+      dateInventaire
+
+    ]);
+
+  }
+
+
+  saveDatabase();
+
+  return true;
+
+}
+
+
+// ======================================================
+// ENREGISTRER PLUSIEURS INVENTAIRES
+// ======================================================
+
+export async function enregistrerInventaires(
+  inventaires
+) {
+
+  await initDB();
+
+
+  if (!Array.isArray(inventaires)) {
+
+    return false;
+
+  }
+
+
+  for (const inventaire of inventaires) {
+
+    const mois =
+      Number(inventaire.mois);
+
+    const annee =
+      Number(inventaire.annee);
+
+    const produitNom =
+      String(
+        inventaire.produit_nom || ""
+      ).trim();
+
+    const type =
+      String(
+        inventaire.type || "medicament"
+      ).trim();
+
+    const origine =
+      String(
+        inventaire.origine || "FANOME"
+      ).trim();
+
+    const stockTheorique =
+      Number(
+        inventaire.stock_theorique || 0
+      );
+
+    const stockPhysique =
+      Number(
+        inventaire.stock_physique || 0
+      );
+
+    const ecart =
+      stockPhysique - stockTheorique;
+
+    const dateInventaire =
+      inventaire.date_inventaire ||
+      new Date().toLocaleDateString("fr-FR");
+
+
+    const existant =
+      db.exec(`
+
+        SELECT id
+
+        FROM inventaires
+
+        WHERE mois = ?
+
+        AND annee = ?
+
+        AND produit_nom = ?
+
+        AND type = ?
+
+        AND origine = ?
+
+        LIMIT 1
+
+      `,
+
+      [
+
+        mois,
+        annee,
+        produitNom,
+        type,
+        origine
+
+      ]);
+
+
+    if (
+      existant.length > 0 &&
+      existant[0].values.length > 0
+    ) {
+
+      const id =
+        Number(
+          existant[0].values[0][0]
+        );
+
+
+      db.run(`
+
+        UPDATE inventaires
+
+        SET
+
+          stock_theorique = ?,
+
+          stock_physique = ?,
+
+          ecart = ?,
+
+          date_inventaire = ?
+
+        WHERE id = ?
+
+      `,
+
+      [
+
+        stockTheorique,
+
+        stockPhysique,
+
+        ecart,
+
+        dateInventaire,
+
+        id
+
+      ]);
+
+    } else {
+
+      db.run(`
+
+        INSERT INTO inventaires
+
+        (
+
+          mois,
+          annee,
+          produit_nom,
+          type,
+          origine,
+          stock_theorique,
+          stock_physique,
+          ecart,
+          date_inventaire
+
+        )
+
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+
+      `,
+
+      [
+
+        mois,
+
+        annee,
+
+        produitNom,
+
+        type,
+
+        origine,
+
+        stockTheorique,
+
+        stockPhysique,
+
+        ecart,
+
+        dateInventaire
+
+      ]);
+
+    }
+
+  }
+
+
+  saveDatabase();
+
+  return true;
+
+}
+
+
+// ======================================================
+// GET INVENTAIRE
+// ======================================================
+
+export async function getInventaire(
+  mois,
+  annee
+) {
+
+  await initDB();
+
+
+  const res = db.exec(`
+
+    SELECT *
+
+    FROM inventaires
+
+    WHERE mois = ?
+
+    AND annee = ?
+
+    ORDER BY
+
+      type ASC,
+
+      origine ASC,
+
+      produit_nom ASC
+
+  `,
+
+  [
+
+    Number(mois),
+
+    Number(annee)
+
+  ]);
+
+
+  if (
+    res.length === 0 ||
+    res[0].values.length === 0
+  ) {
+
+    return [];
+
+  }
+
+
+  return res[0].values.map(row => ({
+
+    id:
+      Number(row[0]),
+
+    mois:
+      Number(row[1]),
+
+    annee:
+      Number(row[2]),
+
+    produit_nom:
+      row[3] || "",
+
+    type:
+      row[4] || "medicament",
+
+    origine:
+      row[5] || "FANOME",
+
+    stock_theorique:
+      Number(row[6] || 0),
+
+    stock_physique:
+      Number(row[7] || 0),
+
+    ecart:
+      Number(row[8] || 0),
+
+    date_inventaire:
+      row[9] || ""
+
+  }));
+
+}
+
+
+// ======================================================
+// HISTORIQUE INVENTAIRES
+// ======================================================
+
+export async function getHistoriqueInventaires() {
+
+  await initDB();
+
+
+  const res = db.exec(`
+
+    SELECT
+
+      mois,
+
+      annee,
+
+      COUNT(*) AS nombre_produits,
+
+      SUM(stock_theorique)
+        AS total_theorique,
+
+      SUM(stock_physique)
+        AS total_physique,
+
+      SUM(ecart)
+        AS total_ecart,
+
+      MAX(date_inventaire)
+        AS date_inventaire
+
+    FROM inventaires
+
+    GROUP BY mois, annee
+
+    ORDER BY
+      annee DESC,
+      mois DESC
+
+  `);
+
+
+  if (
+    res.length === 0 ||
+    res[0].values.length === 0
+  ) {
+
+    return [];
+
+  }
+
+
+  return res[0].values.map(row => ({
+
+    mois:
+      Number(row[0]),
+
+    annee:
+      Number(row[1]),
+
+    nombreProduits:
+      Number(row[2] || 0),
+
+    totalTheorique:
+      Number(row[3] || 0),
+
+    totalPhysique:
+      Number(row[4] || 0),
+
+    totalEcart:
+      Number(row[5] || 0),
+
+    dateInventaire:
+      row[6] || ""
+
+  }));
+
+}
+
+
+// ======================================================
+// SUPPRIMER INVENTAIRE
+// ======================================================
+
+export async function supprimerInventaire(
+  mois,
+  annee
+) {
+
+  await initDB();
+
+
+  db.run(`
+
+    DELETE FROM inventaires
+
+    WHERE mois = ?
+
+    AND annee = ?
+
+  `,
+
+  [
+
+    Number(mois),
+
+    Number(annee)
+
+  ]);
+
+
+  saveDatabase();
+
+  return true;
 
 }

@@ -1,76 +1,61 @@
+
 import { HashRouter, Routes, Route } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 import Sidebar from "./components/Sidebar";
 
 import Dashboard from "./pages/Dashboard";
-import Produits from "./pages/Produits";
+
+import Produits from "./pages/Produits"; 
 import Stock from "./pages/Stock";
 import PatientForm from "./components/PatientForm";
 import Rapport from "./pages/Rapport";
+import Inventaire from "./pages/Inventaire";
 
 import { initDB } from "./services/sqliteService";
 
+export default function App() {
+  const [ready, setReady] = useState(false);
 
-export default function App(){
+  useEffect(() => {
+    async function start() {
+      try {
+        await initDB();
+        setReady(true);
+      } catch (error) {
+        console.error("Erreur initialisation base de données :", error);
+      }
+    }
 
-const [ready,setReady] = useState(false);
+    start();
+  }, []);
 
+  if (!ready) {
+    return <h2>Chargement base de données...</h2>;
+  }
 
-useEffect(()=>{
+  return (
+    <HashRouter>
+      <div className="app">
+        <Sidebar />
 
-async function start(){
+        <div className="main">
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
 
-await initDB();
+            <Route path="/produits" element={<Produits />} />
 
-setReady(true);
+            <Route path="/stock" element={<Stock />} />
 
+            <Route path="/patients" element={<PatientForm />} />
+
+            <Route path="/rapport" element={<Rapport />} />
+
+            <Route path="/inventaire" element={<Inventaire />} />
+          </Routes>
+        </div>
+      </div>
+    </HashRouter>
+  );
 }
 
-start();
-
-},[]);
-
-
-
-if(!ready){
-
-return <h2>Chargement base de données...</h2>;
-
-}
-
-
-
-return (
-
-<HashRouter>
-
-<div className="app">
-
-<Sidebar />
-
-<div className="main">
-
-<Routes>
-
-<Route path="/" element={<Dashboard />} />
-
-<Route path="/produits" element={<Produits />} />
-
-<Route path="/stock" element={<Stock />} />
-
-<Route path="/patients" element={<PatientForm />} />
-
-<Route path="/rapport" element={<Rapport />} />
-
-</Routes>
-
-</div>
-
-</div>
-
-</HashRouter>
-
-);
-
-}
